@@ -535,24 +535,26 @@ class SuperResolution(tf_graph.TensorflowGraph):
 
 		filename, extension = os.path.splitext(os.path.basename(file_path))
 		output_folder += "/" + self.name + "/"
-		util.save_image(output_folder + filename + extension, org_image)
+		# util.save_image(output_folder + filename + extension, org_image)
 
 		if len(org_image.shape) >= 3 and org_image.shape[2] == 3 and self.channels == 1:
 			input_y_image = util.convert_rgb_to_y(org_image)
-			scaled_image = util.resize_image_by_pil(input_y_image, self.scale, resampling_method=self.resampling_method)
-			util.save_image(output_folder + filename + "_bicubic_y" + extension, scaled_image)
+			# scaled_image = util.resize_image_by_pil(input_y_image, self.scale, resampling_method=self.resampling_method)
+			# util.save_image(output_folder + filename + "_bicubic_y" + extension, scaled_image)
 			output_y_image = self.do(input_y_image)
-			util.save_image(output_folder + filename + "_result_y" + extension, output_y_image)
+			# util.save_image(output_folder + filename + "_result_y" + extension, output_y_image)
 
 			scaled_ycbcr_image = util.convert_rgb_to_ycbcr(
 				util.resize_image_by_pil(org_image, self.scale, self.resampling_method))
 			image = util.convert_y_and_cbcr_to_rgb(output_y_image, scaled_ycbcr_image[:, :, 1:3])
 		else:
-			scaled_image = util.resize_image_by_pil(org_image, self.scale, resampling_method=self.resampling_method)
-			util.save_image(output_folder + filename + "_bicubic_y" + extension, scaled_image)
+			# scaled_image = util.resize_image_by_pil(org_image, self.scale, resampling_method=self.resampling_method)
+			# util.save_image(output_folder + filename + "_bicubic_y" + extension, scaled_image)
 			image = self.do(org_image)
 
-		util.save_image(output_folder + filename + "_result" + extension, image)
+		file_path = output_folder + filename + extension
+		util.save_image(file_path, image)
+		print("Saved at ", file_path)
 
 	def do_for_evaluate_with_output(self, file_path, output_directory, print_console=False):
 
