@@ -7,15 +7,23 @@ Functions for evaluating model performance
 Put your images under data/[your dataset name]/ and specify [your dataset name] for --test_dataset.
 This script will create LR images from your test dataset and evaluate the model's performance.
 
---save_results True: will provide generated HR images and bi-cubic HR images.
+--save_results=True: will provide generated HR images and bi-cubic HR images.
 see output/[model_name]/data/[your test data]/ for checking result images.
 
 Also you must put same model args as you trained.
-For ex, if you trained like
-python3 train.py --layers 4  --filters 24 --dataset test --training_images 400
+
+For ex, if you trained like below,
+> python train.py --scale=3
 
 Then you must run evaluate.py like below.
-python3 evaluate.py --layers 4  --filters 24 --dataset new_test_data
+> python evaluate.py --scale=3 --file=your_image_file_path
+
+
+If you trained like below,
+> python train.py --dataset=bsd200 --layers=8 --filters=96 --training_images=30000
+
+Then you must run evaluate.py like below.
+> python evaluate.py --layers=8 --filters=96 --file=your_image_file_path
 """
 
 import logging
@@ -60,7 +68,7 @@ def test(model, test_data):
 		else:
 			mse = model.do_for_evaluate(filename, print_console=False)
 		total_mse += mse
-		total_psnr += util.get_psnr(mse, max_value=FLAGS.max_value)
+		total_psnr += util.get_psnr(mse)
 
 	logging.info("\n=== Average [%s] MSE:%f, PSNR:%f ===" % (
 		test_data, total_mse / len(test_filenames), total_psnr / len(test_filenames)))

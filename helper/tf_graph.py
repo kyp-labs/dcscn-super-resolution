@@ -58,14 +58,16 @@ class TensorflowGraph:
 		self.complexity = 0
 		self.pix_per_input = 1
 
-		self.init_session()
+		self.init_session(flags.gpu_device_id)
 
-	def init_session(self):
+	def init_session(self, device_id=0):
 		config = tf.ConfigProto()
-		config.gpu_options.allow_growth = False
+		config.gpu_options.allow_growth = True    ## just for use the necesary memory of GPU
+		config.gpu_options.visible_device_list = str(device_id)  ## this values depends of numbers of GPUs
 
 		print("Session and graph initialized.")
 		self.sess = tf.InteractiveSession(config=config, graph=tf.Graph())
+
 
 	def init_all_variables(self):
 		self.sess.run(tf.global_variables_initializer())
@@ -171,13 +173,13 @@ class TensorflowGraph:
 		self.Weights.append(w)
 		self.H.append(h)
 
-	def build_pixel_shuffler_layer(self, name, h, scale, filters, activator=None):
+	def build_pixel_shuffler_layer(self, name, h, scale, input_filters, output_filters, activator=None):
 
 		with tf.variable_scope(name):
-			self.build_conv(name + "_CNN", h, self.cnn_size, filters, scale * scale * filters, use_batch_norm=False,
+			self.build_conv(name + "_CNN", h, self.cnn_size, input_filters, scale * scale * output_filters, use_batch_norm=False,
 			                use_bias=True)
 			self.H.append(tf.depth_to_space(self.H[-1], scale))
-			self.build_activator(self.H[-1], filters, activator, base_name=name)
+			self.build_activator(self.H[-1], output_filters, activator, base_name=name)
 
 	def copy_log_to_archive(self, archive_name):
 

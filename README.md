@@ -47,17 +47,17 @@ tensorflow > 1.0, scipy, numpy and pillow
 
 The sample result of default parameter is here. The model is trained by DIV2k with 150,000 48x48 images for one epoch.
 
-| Dataset | Scale | Bicubic | DRCN | VDSR | DCSCN (ver2) | DRRN |
-|:-------:|:-------:|:-------:|:----:|:----:|:----:|:----:|
-| set5 | x2 | 33.66 | 37.63 | 37.53 | 37.79 | 37.74 |
-|  | x3 | 30.39 | 33.82 | 33.66 | 34.06 | 34.03 |
-|  | x4 | 28.42 | 31.53 | 31.35 | 31.72 | 31.68 |
-| set14 | x2 | 30.24 | 33.04 | 33.03 | 33.25 | 33.23 |
-|  | x3 | 27.55 | 29.76 | 29.77 | 29.95 | 29.96 |
-|  | x4 | 26.00 | 28.02 | 28.01 | 28.25 | 28.21 |
-| bsd100 | x2 | 29.56 | 31.85 | 31.90 | 32.00 | 32.05 |
-|  | x3 | 27.21 | 28.80 | 28.82 | 28.89 | 28.95 |
-|  | x4 | 25.96 | 27.23 | 27.29 | 27.35 | 27.38 |
+| Dataset | Scale | Bicubic | c-DCSCN | DRCN | VDSR | DCSCN (ver2) | DRRN |
+|:-------:|:-------:|:-------:|:----:|:----:|:----:|:----:|:----:|
+| set5 | x2 | 33.66 | 37.12 | 37.63 | 37.53 | 37.79 | 37.74 |
+|  | x3 | 30.39 | 33.10 | 33.82 | 33.66 | 34.06 | 34.03 |
+|  | x4 | 28.42 | 30.86 | 31.53 | 31.35 | 31.72 | 31.68 |
+| set14 | x2 | 30.24 | 32.76 | 33.04 | 33.03 | 33.25 | 33.23 |
+|  | x3 | 27.55 | 29.45 | 29.76 | 29.77 | 29.95 | 29.96 |
+|  | x4 | 26.00 | 27.74 | 28.02 | 28.01 | 28.25 | 28.21 |
+| bsd100 | x2 | 29.56 | 31.57 | 31.85 | 31.90 | 32.00 | 32.05 |
+|  | x3 | 27.21 | 28.48 | 28.80 | 28.82 | 28.89 | 28.95 |
+|  | x4 | 25.96 | 27.04 | 27.23 | 27.29 | 27.35 | 27.38 |
 
 Results and model will be uploaded in some days!!
 
@@ -76,6 +76,9 @@ python evaluate.py --test_dataset=set5 --save_results=true --layers=8 --filters=
 
 # evaluating all(set5,set14,bsd100) dataset
 python evaluate.py --test_dataset=all
+
+# evaluate our compact version of DCSCN (c-DCSCN)
+python evaluate.py --scale=2 --layers=7 --filters=32 --min_filters=8 --filters_decay_gamma=1.2 --nin_filters=24 --nin_filters2=8 --reconstruct_layers=0 --self_ensemble=1 --batch_image_size=32 --pixel_shuffler_filters=1 --test_dataset=all
 ```
 
 ## Apply to your own image
@@ -92,38 +95,69 @@ python sr.py --file=your_file.png
 python sr.py --file=your_file.png --layers=8 --filters=96
 ```
 
-## How to train
+## How to train with your own dataset
 
-You can train with any datasets. Put your image files as a training dataset into the directory under **data** directory, then specify with --dataset arg. There are some other hyper paramters to train, check [args.py](https://github.com/jiny2001/dcscn-super-resolution/blob/master/helper/args.py) to use other training parameters.
+You can train with any datasets. Put your image files as a training dataset into the directory under **data** directory, then specify with --dataset arg. Since There are some important hyper paramters to train, please check [args.py](https://github.com/jiny2001/dcscn-super-resolution/blob/master/helper/args.py) to use other training parameters.
 
-Each training and evaluation result will be added to **log.txt**.
+Once training parameters has been given, **"model name"** will be defined by the parameters. For ex, when you use default parameters, **"model name"** would be like **"dcscn_L12_F196to48_NIN_A64_PS_R1F32"** and this name represents model structure.
 
 ```
 # training for x2 with bsd200 dataset
 python train.py --dataset=bsd200 --training_images=80000
 
-# training for x2 with small model
-python train.py --dataset=bsd200 --layers=8 --filters=96 --training_images=30000
-
-# training for x2 with tiny model for test
-python train.py --dataset=set5 --layers=5 --filters=32 --use_nin=false --training_images=10000
+# training for x3 scale with your own dataset
+python train.py --scale=3 --dataset=[your own data directory]
 
 # training for x2 with transposed CNN instead of using Pixel Shuffler layer for up-sampling
 python train.py --dataset=bsd200 --training_images=80000 --pixel_shuffler=false
-
-# training for x3 scale
-python train.py --scale=3
 ```
+
+* Each training and evaluation summary will be added to **log.txt**.
+* Model will be saved under **models/"model name".ckpt**
+* Evaluation result images would be generated under **output/"model name"/data/[dataset directory name]**
+* When you use evaluate.py / sr.py, please use completely same args with training so that the script can load your own learned **"model name".ckpt**.
+
+
+### Using small model for training/test (for CPU)
+
+In case 1)you're using CPU, 2)training data is small or 3)just want to test if it works, I recommend you to use smaller model. And 8 layers with 96 filters model has enough performance for my DCSCN. When you're using CPU, 4-6 layers with 32-64 filters would be a good starting point.
+
+```
+# training for x2 with smaller model
+python train.py --dataset=bsd200 --layers=8 --filters=96 --training_images=30000
+
+# training for x2 with tiny model for test
+python train.py --dataset=set5 --layers=4 --filters=32 --use_nin=false --training_images=10000
+```
+
+We propose compact verison of DCSCN (c-DCSCN) in my paper. When you want to try training with this model, use these option below. (x2 scale)
+```
+python train.py --scale=2 --layers=7 --filters=32 --min_filters=8 --filters_decay_gamma=1.2 --nin_filters=24 --nin_filters2=8 --reconstruct_layers=0 --self_ensemble=1 --dataset=yang_bsd_8 --training_images=228688 --batch_image_size=32 --build_batch=True --do_benchmark=True --pixel_shuffler_filters=1
+```
+
+
+
+### Speeding up training
 
 Please note loading/converting batch images for each training is a bit heavy process since there will be a lot of iterations. Here are some options. You can use those option to reduce training time significantly.
 
 1. Use "convert_y.py" to convert your dataset images to Y-channel monochrome bitmap.
+
 If your training data is compressed like PNG or jpeg and the image resolution is larger, you must convert it before. Especially for DIV2K dataset, you can save a big time for decompressing and converting image process.
 Also in this mode, each input batch image may be flipped horizontally by the probability of 50%.
 
 2. Use "--build_batch True" option for smaller dataset
-If your dataset is small enough to store in CPU memory, please use this. It will build a batch images before the training. When you're using HDD(not SSD) and the dataset is not large like (Yang91 + BSD200) augmented by 8 methods, this option can avoid loading/converting process for each batch.
+
+If your dataset is small enough to store in CPU memory, please use this. It will split source images into batch images and save to reuse before the training. When you're using HDD(not SSD) and the dataset is not large like (Yang91 + BSD200) augmented by 8 methods, this option is nice. It will avoid loading/converting process for each batch.
+
 In this case, batch image positions are adjusted and limited to be on the grid with the half of batch_image_size. However, as far as I experimented, that doesn't affect to PSNR performance so much.
+
+### How can I set --training_images parameter?
+
+--training_images is, the number of patches trained in one epoch. So, usually, it would be better to be same as the number of input training patch images. When you use build_batch=True, the trainer will create a patch images under **"batch_data"** before training so that you can see how much batch images are in the train data. 
+
+However, it really depends on the image type/variance and model complexity. You can begin with very small value like 1,000 and if the result is not enough, you can increase it until 100,000 to 200,000.
+
 
 # Important parameters
 
@@ -180,7 +214,7 @@ During the training, tensorboard log is available under **tf_log** directory.
 
 <img src="https://raw.githubusercontent.com/jiny2001/dcscn-super-resolution/master/documents/model_v2.png" width="400">
 
-You can check test PSNR transition during training. Also mean / std / histogram of every weights and biases are logged at tensorboard.
+You can check test PSNR transition during training. Also mean / std / histogram of every weights/biases and gradients are logged at tensorboard.
 
 <img src="https://raw.githubusercontent.com/jiny2001/dcscn-super-resolution/master/documents/tensorboard_1.png" width="800">
 <img src="https://raw.githubusercontent.com/jiny2001/dcscn-super-resolution/master/documents/tensorboard_2.png" width="800">
