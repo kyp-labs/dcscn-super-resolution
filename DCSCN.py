@@ -548,7 +548,14 @@ class SuperResolution(tf_graph.TensorflowGraph):
         output_folder += "/" + self.name + "/"
         # util.save_image(output_folder + filename + extension, org_image)
 
-        if len(org_image.shape) >= 3 and org_image.shape[2] == 3 and self.channels == 1:
+        if os.path.exists(output_folder + filename + extension):
+            print("File already exists in the target directory")
+            return
+
+        if org_image.shape[0] + org_image.shape[1] >= 1024:
+            print("Image is too big: ", org_image.shape)
+            image = org_image
+        elif len(org_image.shape) >= 3 and org_image.shape[2] == 3 and self.channels == 1:
             input_y_image = util.convert_rgb_to_y(org_image)
             # scaled_image = util.resize_image_by_pil(input_y_image, self.scale, resampling_method=self.resampling_method)
             # util.save_image(output_folder + filename + "_bicubic_y" + extension, scaled_image)
